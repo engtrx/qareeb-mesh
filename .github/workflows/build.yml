@@ -1,4 +1,4 @@
-name: Build APK
+name: Build Release APK
 on: [push, workflow_dispatch]
 permissions:
   contents: write
@@ -17,12 +17,19 @@ jobs:
         with:
           gradle-version: 8.7
           
-      - name: Build
-        run: gradle clean assembleDebug --no-daemon
-        
+      - name: Build Release APK
+        run: |
+          keytool -genkey -v -keystore release.keystore -alias mykey -keyalg RSA -keysize 2048 -validity 10000 -storepass password123 -keypass password123 -dname "CN=Qareeb, OU=Dev, O=Qareeb, L=City, S=State, C=US"
+          
+          gradle clean assembleRelease \
+            -Pandroid.injected.signing.store.file=$(pwd)/release.keystore \
+            -Pandroid.injected.signing.store.password=password123 \
+            -Pandroid.injected.signing.key.alias=mykey \
+            -Pandroid.injected.signing.key.password=password123
+            
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ github.run_number }}
-          name: قريب ميش v${{ github.run_number }}
-          files: app/build/outputs/apk/debug/app-debug.apk
+          name: قريب (Release) v${{ github.run_number }}
+          files: app/build/outputs/apk/release/app-release.apk
